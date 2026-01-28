@@ -278,10 +278,10 @@ def main():
     print(f"Average time per frame: {elapsed_time / len(results):.2f} seconds")
     print(f"\nOutput directory: {output_dir}")
     print("\nGenerated files:")
-    print(f"  📁 Data: {data_dir}")
-    print(f"  📁 Point clouds: {ply_dir}")
-    print(f"  📁 Visualizations: {viz_dir}")
-    print(f"  📄 Summary: {summary_file}")
+    print(f"  [DIR] Data: {data_dir}")
+    print(f"  [DIR] Point clouds: {ply_dir}")
+    print(f"  [DIR] Visualizations: {viz_dir}")
+    print(f"  [FILE] Summary: {summary_file}")
     print("\nVisualization files you can screenshot:")
 
     for idx in range(min(3, len(results))):  # Show first 3
@@ -290,7 +290,7 @@ def main():
         frame_id = frame["frame_id"]
         full_frame_id = f"{scene_id}_{frame_id}"
         grid_file = viz_dir / f"{full_frame_id}_grid.png"
-        print(f"  🖼️  {grid_file}")
+        print(f"  [IMG] {grid_file}")
 
     if len(results) > 3:
         print(f"  ... and {len(results) - 3} more")
