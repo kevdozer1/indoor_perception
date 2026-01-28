@@ -93,6 +93,11 @@ Examples:
         action="store_true",
         help="Don't save segment metadata JSON files",
     )
+    parser.add_argument(
+        "--save-segmentation-maps",
+        action="store_true",
+        help="Save segmentation maps as .npy files alongside PLY outputs",
+    )
 
     args = parser.parse_args()
 
@@ -153,6 +158,7 @@ Examples:
             output_dir=str(output_path),
             max_frames=args.max_frames,
             save_metadata=not args.no_metadata,
+            save_segmentation_maps=args.save_segmentation_maps,
         )
 
         # Print summary

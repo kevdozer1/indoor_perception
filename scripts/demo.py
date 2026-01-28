@@ -16,7 +16,8 @@ from pathlib import Path
 
 import numpy as np
 
-from indoor_perception.dataset import ScanNetDataset, create_sample_scene
+from indoor_perception.dataset import ScanNetDataset, create_sample_scene, download_tum_samples
+from indoor_perception.dataset.real_samples import download_open3d_sample
 from indoor_perception.pipeline import ScenePerceptionPipeline
 from indoor_perception.visualizer import visualize_pipeline_result
 
@@ -51,7 +52,7 @@ def main():
         "--data",
         type=str,
         default="data/demo",
-        help="Data directory for synthetic scenes (default: data/demo)",
+        help="Data directory for scenes (default: data/demo)",
     )
 
     parser.add_argument(
@@ -76,6 +77,30 @@ def main():
         metavar=("WIDTH", "HEIGHT"),
         help="Image size for synthetic data (default: 640 480)",
     )
+    parser.add_argument(
+        "--data-source",
+        type=str,
+        choices=["synthetic", "tum", "open3d"],
+        default="synthetic",
+        help="Data source for demo (default: synthetic)",
+    )
+    parser.add_argument(
+        "--open3d-sample",
+        type=str,
+        default="tum",
+        help="Open3D sample to use when data-source=open3d (default: tum)",
+    )
+    parser.add_argument(
+        "--depth-scale",
+        type=float,
+        default=None,
+        help="Depth scale factor (overrides default for data source)",
+    )
+    parser.add_argument(
+        "--insecure-downloads",
+        action="store_true",
+        help="Disable SSL verification when downloading real data",
+    )
 
     parser.add_argument(
         "--model",
@@ -97,6 +122,11 @@ def main():
         action="store_true",
         help="Skip model download/inference (for testing structure only)",
     )
+    parser.add_argument(
+        "--save-segmentation-maps",
+        action="store_true",
+        help="Save segmentation maps as .npy files alongside PLY outputs",
+    )
 
     args = parser.parse_args()
 
@@ -109,34 +139,67 @@ def main():
     print(f"Data directory: {data_dir}")
     print(f"Model: {args.model}")
     print(f"Device: {args.device}")
-    print(f"Creating {args.num_scenes} scene(s) with {args.num_frames} frames each")
+    print(f"Data source: {args.data_source}")
+    if args.data_source == "synthetic":
+        print(f"Creating {args.num_scenes} scene(s) with {args.num_frames} frames each")
 
     total_steps = 5
     start_time = time.time()
 
-    # Step 1: Create synthetic data
-    print_step(1, total_steps, "Creating synthetic RGB-D data")
+    # Step 1: Get data
+    if args.data_source == "synthetic":
+        print_step(1, total_steps, "Creating synthetic RGB-D data")
+        data_dir.mkdir(parents=True, exist_ok=True)
 
-    data_dir.mkdir(parents=True, exist_ok=True)
+        for i in range(args.num_scenes):
+            scene_id = f"demo_scene_{i:02d}"
+            print(f"  Creating scene: {scene_id}")
 
-    for i in range(args.num_scenes):
-        scene_id = f"demo_scene_{i:02d}"
-        print(f"  Creating scene: {scene_id}")
+            create_sample_scene(
+                output_dir=str(data_dir),
+                scene_id=scene_id,
+                num_frames=args.num_frames,
+                image_size=tuple(args.image_size),
+            )
 
-        create_sample_scene(
-            output_dir=str(data_dir),
-            scene_id=scene_id,
-            num_frames=args.num_frames,
-            image_size=tuple(args.image_size),
-        )
-
-    print(f"  [OK] Created {args.num_scenes} synthetic scene(s)")
-    print(f"  Total frames: {args.num_scenes * args.num_frames}")
+        print(f"  [OK] Created {args.num_scenes} synthetic scene(s)")
+        print(f"  Total frames: {args.num_scenes * args.num_frames}")
+    elif args.data_source == "tum":
+        print_step(1, total_steps, "Downloading real RGB-D data (TUM)")
+        data_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            scene_dir, default_depth_scale = download_tum_samples(
+                str(data_dir),
+                insecure=args.insecure_downloads,
+            )
+        except Exception as e:
+            print(f"  [ERROR] Failed to download TUM samples: {e}")
+            return
+        print(f"  [OK] Downloaded scene: {scene_dir.name}")
+        if args.depth_scale is None:
+            args.depth_scale = default_depth_scale
+    else:
+        print_step(1, total_steps, "Downloading real RGB-D data (Open3D sample)")
+        data_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            scene_dir, default_depth_scale = download_open3d_sample(
+                data_dir,
+                sample=args.open3d_sample,
+            )
+        except Exception as e:
+            print(f"  [ERROR] Failed to download Open3D sample: {e}")
+            return
+        print(f"  [OK] Downloaded scene: {scene_dir.name}")
+        if args.depth_scale is None:
+            args.depth_scale = default_depth_scale
 
     # Step 2: Load dataset
     print_step(2, total_steps, "Loading dataset")
 
-    dataset = ScanNetDataset(data_root=str(data_dir))
+    dataset = ScanNetDataset(
+        data_root=str(data_dir),
+        depth_scale=args.depth_scale or 1000.0,
+    )
     print(f"  [OK] Loaded {len(dataset)} frames")
 
     # Step 3: Initialize pipeline
@@ -180,6 +243,7 @@ def main():
             idx=idx,
             output_path=str(ply_path),
             save_ply=True,
+            save_segmentation_map=args.save_segmentation_maps,
         )
 
         # Store for visualization
@@ -208,15 +272,11 @@ def main():
         # For demo, we'll use the saved PLY file
         ply_path = ply_dir / f"{full_frame_id}.ply"
 
-        # Create a simple segmentation mask for visualization
-        # In real scenario, this would come from the pipeline
-        h, w = frame["rgb"].shape[:2]
-        segmentation_mask = np.random.randint(0, 10, (h, w), dtype=np.int32)
-
-        # For better demo, create segmentation from pipeline data
-        # We'll create a dummy mask based on spatial regions
-        y_coords, x_coords = np.meshgrid(np.arange(h), np.arange(w), indexing='ij')
-        segmentation_mask = (x_coords // 80 + y_coords // 60) % 10
+        segmentation_mask = result.get("segmentation_map")
+        if segmentation_mask is None:
+            h, w = frame["rgb"].shape[:2]
+            y_coords, x_coords = np.meshgrid(np.arange(h), np.arange(w), indexing='ij')
+            segmentation_mask = (x_coords // 80 + y_coords // 60) % 10
 
         visualize_pipeline_result(
             rgb_image=result["rgb"],

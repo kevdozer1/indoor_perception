@@ -2,6 +2,7 @@
 
 import argparse
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from PIL import Image
@@ -11,7 +12,12 @@ from indoor_perception.io import read_ply
 from indoor_perception.visualizer import visualize_pipeline_result
 
 
-def create_visualizations(data_dir: str, output_dir: str, ply_dir: str):
+def create_visualizations(
+    data_dir: str,
+    output_dir: str,
+    ply_dir: str,
+    segmentation_dir: Optional[str] = None,
+):
     """Create visualizations for processed frames."""
     output_path = Path(output_dir)
     viz_dir = output_path / "visualizations"
@@ -37,10 +43,17 @@ def create_visualizations(data_dir: str, output_dir: str, ply_dir: str):
             print(f"    Warning: PLY file not found: {ply_path}")
             continue
 
-        # Create dummy segmentation mask (spatial regions)
-        h, w = frame["rgb"].shape[:2]
-        y_coords, x_coords = np.meshgrid(np.arange(h), np.arange(w), indexing='ij')
-        segmentation_mask = (x_coords // 80 + y_coords // 60) % 15  # More segments
+        segmentation_root = Path(segmentation_dir) if segmentation_dir else Path(ply_dir)
+        segmentation_path = segmentation_root / f"{full_frame_id}.segmentation.npy"
+
+        if segmentation_path.exists():
+            segmentation_mask = np.load(segmentation_path)
+        else:
+            # Create dummy segmentation mask (spatial regions)
+            h, w = frame["rgb"].shape[:2]
+            y_coords, x_coords = np.meshgrid(np.arange(h), np.arange(w), indexing='ij')
+            segmentation_mask = (x_coords // 80 + y_coords // 60) % 15  # More segments
+            print(f"    Warning: Segmentation map not found: {segmentation_path}")
 
         # Create visualizations
         visualize_pipeline_result(
@@ -64,10 +77,15 @@ def main():
     parser.add_argument("--data", required=True, help="Data directory")
     parser.add_argument("--output", required=True, help="Output directory")
     parser.add_argument("--ply-dir", required=True, help="Directory with PLY files")
+    parser.add_argument(
+        "--segmentation-dir",
+        required=False,
+        help="Directory with saved .segmentation.npy files (defaults to --ply-dir)",
+    )
 
     args = parser.parse_args()
 
-    create_visualizations(args.data, args.output, args.ply_dir)
+    create_visualizations(args.data, args.output, args.ply_dir, args.segmentation_dir)
 
 
 if __name__ == "__main__":

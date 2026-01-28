@@ -55,6 +55,7 @@ class ScenePerceptionPipeline:
         idx: int,
         output_path: Optional[str] = None,
         save_ply: bool = True,
+        save_segmentation_map: bool = False,
     ) -> Dict[str, Any]:
         """
         Process a single frame through the complete pipeline.
@@ -64,15 +65,18 @@ class ScenePerceptionPipeline:
             output_path: Optional path to save PLY file. If None and save_ply=True,
                         generates default path.
             save_ply: Whether to save the point cloud to a PLY file
+            save_segmentation_map: Whether to save the segmentation map to a .npy file
 
         Returns:
             Dictionary containing:
                 - 'points': Nx3 array of 3D points
                 - 'colors': Nx3 array of RGB colors
                 - 'labels': N array of segment IDs
+                - 'segmentation_map': HxW array of segment IDs
                 - 'segment_info': Metadata about segments
                 - 'frame_id': Frame identifier
                 - 'output_file': Path to saved PLY (if save_ply=True)
+                - 'segmentation_file': Path to saved segmentation map (if save_segmentation_map=True)
 
         Example:
             >>> pipeline = ScenePerceptionPipeline(dataset)
@@ -104,24 +108,32 @@ class ScenePerceptionPipeline:
         )
         print(f"  Generated {len(points)} 3D points")
 
-        # Save PLY if requested
+        # Save PLY and segmentation map if requested
         output_file = None
-        if save_ply:
-            if output_path is None:
-                scene_id = frame.get("scene_id", "scene")
-                output_path = f"{scene_id}_{frame_id}.ply"
+        segmentation_file = None
+        if output_path is None and (save_ply or save_segmentation_map):
+            scene_id = frame.get("scene_id", "scene")
+            output_path = f"{scene_id}_{frame_id}.ply"
 
+        if save_ply:
             print(f"  Saving to {output_path}")
             write_ply(output_path, points, colors, labels)
             output_file = output_path
+
+        if save_segmentation_map:
+            segmentation_path = Path(output_path).with_suffix(".segmentation.npy")
+            np.save(segmentation_path, segmentation_map.astype(np.int32))
+            segmentation_file = str(segmentation_path)
 
         return {
             "points": points,
             "colors": colors,
             "labels": labels,
+            "segmentation_map": segmentation_map,
             "segment_info": segment_info,
             "frame_id": frame_id,
             "output_file": output_file,
+            "segmentation_file": segmentation_file,
         }
 
     def process_all(
@@ -129,6 +141,7 @@ class ScenePerceptionPipeline:
         output_dir: str,
         max_frames: Optional[int] = None,
         save_metadata: bool = True,
+        save_segmentation_maps: bool = False,
     ) -> list:
         """
         Process all frames in the dataset.
@@ -137,6 +150,7 @@ class ScenePerceptionPipeline:
             output_dir: Directory to save output PLY files
             max_frames: Optional limit on number of frames to process
             save_metadata: Whether to save segment metadata as JSON
+            save_segmentation_maps: Whether to save segmentation maps as .npy files
 
         Returns:
             List of result dictionaries for each processed frame
@@ -172,6 +186,7 @@ class ScenePerceptionPipeline:
                     idx,
                     output_path=str(output_file),
                     save_ply=True,
+                    save_segmentation_map=save_segmentation_maps,
                 )
 
                 # Save metadata if requested

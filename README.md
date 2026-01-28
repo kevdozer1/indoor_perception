@@ -56,6 +56,20 @@ This will:
 3. Generate 3D point clouds
 4. Create visualization grids (RGB + segmentation + 3D renders)
 
+### Run the Demo on Real Indoor RGB-D Data (TUM)
+
+```bash
+# Download TUM RGB-D samples and run the pipeline
+python scripts/demo.py --data-source tum --data data/real
+```
+
+### Run the Demo on Real Indoor RGB-D Data (Open3D Sample)
+
+```bash
+# Download an Open3D-provided real RGB-D sample and run the pipeline
+python scripts/demo.py --data-source open3d --data data/real
+```
+
 ### Manual Usage
 
 ### 1. Download or Create Sample Data
@@ -66,6 +80,15 @@ python scripts/download_sample.py --output data/ --create-synthetic --num-frames
 
 # Or download from a URL (if you have ScanNet access)
 python scripts/download_sample.py --output data/ --url <your-scannet-url>
+
+# Download a few real indoor RGB-D samples from TUM
+python scripts/download_real_samples.py --output data/real --source tum
+
+# If SSL certificate errors occur:
+python scripts/download_real_samples.py --output data/real --source tum --insecure
+
+# Download a real RGB-D sample via Open3D
+python scripts/download_real_samples.py --output data/real --source open3d --open3d-sample tum
 ```
 
 ### 2. Run the Pipeline
@@ -79,6 +102,9 @@ python scripts/run_pipeline.py --data data/ --output output/ --scenes scene0000_
 
 # Limit frames for testing
 python scripts/run_pipeline.py --data data/ --output output/ --max-frames 5
+
+# Save segmentation maps for later visualization
+python scripts/run_pipeline.py --data data/ --output output/ --save-segmentation-maps
 ```
 
 ### 3. Visualize Results
@@ -191,6 +217,23 @@ visualize_pipeline_result(
     frame_id="frame_001",
 )
 # This generates: frame_001_grid.png, frame_001_3d.png, frame_001_segmentation.png
+```
+
+You can also visualize a batch with the CLI (uses saved segmentation maps if present):
+
+```bash
+python scripts/visualize_results.py --data data/ --output output/viz --ply-dir output/
+```
+
+### Add Screenshots to This README
+
+1. Run a demo or pipeline to generate visualization PNGs.
+2. Copy the images you want into `docs/images/`.
+3. Add markdown image tags to this README.
+
+Example (update filenames as needed):
+```markdown
+![Demo grid](docs/images/scene_open3d_tum_0_grid.png)
 ```
 
 ## Project Structure

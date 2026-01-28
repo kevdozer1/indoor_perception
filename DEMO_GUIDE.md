@@ -26,6 +26,20 @@ python scripts/demo.py
 5. Generates visualizations with Open3D (headless, no GUI)
 6. Saves everything to `output/demo/`
 
+### Run the Demo on Real Indoor RGB-D Data (TUM)
+
+```bash
+# Download TUM RGB-D samples and run the pipeline
+python scripts/demo.py --data-source tum --data data/real
+```
+
+### Run the Demo on Real Indoor RGB-D Data (Open3D Sample)
+
+```bash
+# Download an Open3D-provided RGB-D sample and run the pipeline
+python scripts/demo.py --data-source open3d --data data/real
+```
+
 ### 3. View Results
 
 After running, check these directories:
@@ -59,6 +73,9 @@ python scripts/demo.py --model facebook/mask2former-swin-base-coco-panoptic
 
 # Custom output directory
 python scripts/demo.py --output my_demo_output/
+
+# Save segmentation maps for reuse with visualize_results.py
+python scripts/demo.py --save-segmentation-maps
 ```
 
 ### Demo with existing data
@@ -112,6 +129,14 @@ If the model download fails or is slow:
 ```bash
 # Use a smaller model
 python scripts/demo.py --model facebook/mask2former-swin-tiny-coco-panoptic
+```
+
+### TUM Download SSL Issues
+
+If the TUM download fails with SSL certificate errors:
+
+```bash
+python scripts/demo.py --data-source tum --data data/real --insecure-downloads
 ```
 
 ### Out of Memory
