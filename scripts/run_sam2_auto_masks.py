@@ -86,8 +86,27 @@ def main() -> None:
         print("CUDA not available, falling back to CPU.")
         device = "cpu"
 
+    checkpoint_path = Path(args.checkpoint)
+    model_config_path = Path(args.model_config)
+
+    fallback_root = Path(".cache") / "sam2"
+    if not checkpoint_path.exists():
+        candidate = fallback_root / checkpoint_path
+        if candidate.exists():
+            checkpoint_path = candidate
+
+    if not model_config_path.exists():
+        candidate = fallback_root / model_config_path
+        if candidate.exists():
+            model_config_path = candidate
+
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+    if not model_config_path.exists():
+        raise FileNotFoundError(f"Model config not found: {model_config_path}")
+
     print(f"Loading SAM 2 model on {device}...")
-    model = build_sam2(args.model_config, args.checkpoint, device=device)
+    model = build_sam2(str(model_config_path), str(checkpoint_path), device=device)
     mask_generator = SAM2AutomaticMaskGenerator(model)
 
     images = list_images(input_dir)
