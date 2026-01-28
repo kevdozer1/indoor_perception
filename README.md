@@ -30,6 +30,9 @@ A modular Python pipeline for indoor scene perception using RGB-D data and panop
 git clone https://github.com/yourusername/indoor-perception.git
 cd indoor-perception
 
+# Use main branch
+git checkout main
+
 # Install in development mode
 pip install -e .
 
@@ -223,6 +226,38 @@ You can also visualize a batch with the CLI (uses saved segmentation maps if pre
 
 ```bash
 python scripts/visualize_results.py --data data/ --output output/viz --ply-dir output/
+```
+
+### SAM 2 Masks for Image-Only Tests
+
+You can run SAM 2 automatic mask generation on a folder of images (e.g., `data/facebook/`)
+and inspect the overlays to compare mask quality.
+
+Install SAM 2 (official repo) and download checkpoints:
+
+```bash
+git clone https://github.com/facebookresearch/sam2.git
+cd sam2
+pip install -e .
+
+# Download checkpoints
+cd checkpoints
+./download_ckpts.sh
+```
+
+Note: SAM 2 requires Python 3.10+ and recent PyTorch. On Windows, the SAM 2
+team recommends using WSL for installation.
+
+Run SAM 2 on local images:
+
+```bash
+python scripts/run_sam2_auto_masks.py \
+  --input-dir data/facebook \
+  --output-dir output/sam2/facebook \
+  --checkpoint checkpoints/sam2.1_hiera_large.pt \
+  --model-config configs/sam2.1/sam2.1_hiera_l.yaml \
+  --save-overlays \
+  --save-mask-map
 ```
 
 ### Add Screenshots to This README
