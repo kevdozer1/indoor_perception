@@ -260,6 +260,23 @@ python scripts/run_sam2_auto_masks.py \
   --save-mask-map
 ```
 
+### SAM 2 + Point Cloud (Image Folder)
+
+Use SAM 2 masks plus a synthetic constant depth to generate point clouds from
+image-only datasets like `data/facebook`:
+
+```bash
+python scripts/run_image_folder_pipeline.py \
+  --input-dir data/facebook \
+  --pattern "*_01.jpg" \
+  --output output/facebook_sam2_pcd \
+  --checkpoint .cache/sam2/checkpoints/sam2.1_hiera_small.pt \
+  --model-config configs/sam2.1/sam2.1_hiera_s.yaml \
+  --device cpu \
+  --constant-depth 2.0 \
+  --save-segmentation-maps
+```
+
 ### Add Screenshots to This README
 
 1. Run a demo or pipeline to generate visualization PNGs.
