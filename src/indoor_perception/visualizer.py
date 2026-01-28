@@ -3,6 +3,8 @@
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
+import matplotlib
+matplotlib.use('Agg')  # Force headless rendering
 import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
@@ -262,8 +264,7 @@ def create_grid_visualization(
 
     # Convert to image array
     fig.canvas.draw()
-    grid_image = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-    grid_image = grid_image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    grid_image = np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3]
 
     # Save if requested
     if output_path is not None:
