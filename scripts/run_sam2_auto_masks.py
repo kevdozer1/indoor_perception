@@ -102,17 +102,21 @@ def main() -> None:
 
     if not checkpoint_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
-    if not model_config_path.exists():
-        raise FileNotFoundError(f"Model config not found: {model_config_path}")
 
     # Hydra expects config names relative to the sam2 package (e.g. configs/sam2.1/...)
     config_name = str(model_config_path)
+    if not model_config_path.exists() and "configs" in config_name.replace("\\", "/"):
+        config_name = config_name.replace("\\", "/")
+        model_config_path = None
+    elif not model_config_path.exists():
+        raise FileNotFoundError(f"Model config not found: {model_config_path}")
     sam2_root = fallback_root / "sam2" / "configs"
-    try:
-        if sam2_root in model_config_path.parents:
-            config_name = str(model_config_path.relative_to(fallback_root / "sam2"))
-    except Exception:
-        pass
+    if model_config_path is not None:
+        try:
+            if sam2_root in model_config_path.parents:
+                config_name = str(model_config_path.relative_to(fallback_root / "sam2"))
+        except Exception:
+            pass
 
     print(f"Loading SAM 2 model on {device}...")
     model = build_sam2(config_name, str(checkpoint_path), device=device)
