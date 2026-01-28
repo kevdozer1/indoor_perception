@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "indoor-perception"
+version = "0.1.0"
+description = "Indoor scene perception pipeline with RGB-D processing and panoptic segmentation"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Indoor Perception Team"}
+]
+keywords = ["computer-vision", "3d", "segmentation", "indoor-scenes", "rgb-d"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "transformers>=4.30.0",
+    "numpy>=1.24.0",
+    "pillow>=9.5.0",
+    "plyfile>=0.9.0",
+    "requests>=2.28.0",
+    "tqdm>=4.65.0",
+    "open3d>=0.17.0",
+    "matplotlib>=3.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.3.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.3.0",
+    "ruff>=0.0.270",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/indoor-perception"
+Repository = "https://github.com/yourusername/indoor-perception"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+select = ["E", "F", "I", "N", "W"]
