@@ -18,6 +18,7 @@ class ImageFolderDataset(RGBDDataset):
         pattern: str = "*.*",
         constant_depth_m: float = 2.0,
         depth_mode: str = "constant",
+        depth_estimator=None,
     ) -> None:
         self.image_dir = Path(image_dir)
         if not self.image_dir.exists():
@@ -25,6 +26,7 @@ class ImageFolderDataset(RGBDDataset):
 
         self.depth_mode = depth_mode
         self.constant_depth_m = float(constant_depth_m)
+        self.depth_estimator = depth_estimator
 
         self.images: List[Path] = sorted(self.image_dir.glob(pattern))
         self.images = [p for p in self.images if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}]
@@ -53,6 +55,10 @@ class ImageFolderDataset(RGBDDataset):
 
         if self.depth_mode == "constant":
             depth = np.ones((h, w), dtype=np.float32) * self.constant_depth_m
+        elif self.depth_mode == "midas":
+            if self.depth_estimator is None:
+                raise ValueError("depth_estimator is required for depth_mode='midas'")
+            depth = self.depth_estimator(rgb)
         else:
             raise ValueError(f"Unsupported depth mode: {self.depth_mode}")
 

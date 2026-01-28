@@ -8,6 +8,40 @@ from indoor_perception.pipeline import ScenePerceptionPipeline
 from indoor_perception.segmentation import Sam2SegmentationModel
 
 
+def build_midas_depth_estimator(device: str, depth_min: float, depth_max: float):
+    import torch
+
+    midas = torch.hub.load("intel-isl/MiDaS", "MiDaS_small", trust_repo=True)
+    midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms", trust_repo=True).small_transform
+    midas.to(device)
+    midas.eval()
+
+    def estimate(rgb: "np.ndarray") -> "np.ndarray":
+        import numpy as np
+
+        input_batch = midas_transforms(rgb).to(device)
+        with torch.inference_mode():
+            prediction = midas(input_batch)
+            prediction = torch.nn.functional.interpolate(
+                prediction.unsqueeze(1),
+                size=rgb.shape[:2],
+                mode="bicubic",
+                align_corners=False,
+            ).squeeze()
+        depth = prediction.cpu().numpy()
+        depth_min_val = np.min(depth)
+        depth_max_val = np.max(depth)
+        if depth_max_val - depth_min_val < 1e-6:
+            norm = np.zeros_like(depth)
+        else:
+            norm = (depth - depth_min_val) / (depth_max_val - depth_min_val)
+        # MiDaS gives inverse depth-like values (higher = closer), so invert to meters.
+        depth_m = depth_max - norm * (depth_max - depth_min)
+        return depth_m.astype(np.float32)
+
+    return estimate
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run pipeline on image folder with SAM2 masks.")
     parser.add_argument("--input-dir", required=True, help="Folder of images")
@@ -21,6 +55,14 @@ def main() -> None:
     )
     parser.add_argument("--device", default="cpu", help="cuda or cpu")
     parser.add_argument("--constant-depth", type=float, default=2.0, help="Constant depth in meters")
+    parser.add_argument(
+        "--depth-mode",
+        choices=["constant", "midas"],
+        default="constant",
+        help="Depth generation mode (default: constant)",
+    )
+    parser.add_argument("--depth-min", type=float, default=0.5, help="Min depth for MiDaS scaling (m)")
+    parser.add_argument("--depth-max", type=float, default=4.0, help="Max depth for MiDaS scaling (m)")
     parser.add_argument("--max-images", type=int, default=None, help="Limit number of images")
     parser.add_argument("--save-segmentation-maps", action="store_true", help="Save segmentation maps")
     parser.add_argument(
@@ -31,11 +73,16 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    depth_estimator = None
+    if args.depth_mode == "midas":
+        depth_estimator = build_midas_depth_estimator(args.device, args.depth_min, args.depth_max)
+
     dataset = ImageFolderDataset(
         image_dir=args.input_dir,
         pattern=args.pattern,
         constant_depth_m=args.constant_depth,
-        depth_mode="constant",
+        depth_mode=args.depth_mode,
+        depth_estimator=depth_estimator,
     )
 
     if args.max_images is not None:

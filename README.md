@@ -277,6 +277,30 @@ python scripts/run_image_folder_pipeline.py \
   --save-segmentation-maps
 ```
 
+### SAM 2 + MiDaS Depth + Visualization Grids
+
+Generate point clouds with MiDaS depth and then render grid visualizations:
+
+```bash
+python scripts/run_image_folder_pipeline.py \
+  --input-dir data/facebook \
+  --pattern "*_01.jpg" \
+  --output output/facebook_sam2_midas_pcd \
+  --checkpoint .cache/sam2/checkpoints/sam2.1_hiera_small.pt \
+  --model-config configs/sam2.1/sam2.1_hiera_s.yaml \
+  --device cpu \
+  --depth-mode midas \
+  --depth-min 0.5 \
+  --depth-max 4.0 \
+  --save-segmentation-maps
+
+python scripts/visualize_image_folder_results.py \
+  --image-dir data/facebook \
+  --pattern "*_01.jpg" \
+  --ply-dir output/facebook_sam2_midas_pcd \
+  --output output/facebook_sam2_midas_viz
+```
+
 ### Add Screenshots to This README
 
 1. Run a demo or pipeline to generate visualization PNGs.
