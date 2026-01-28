@@ -328,7 +328,7 @@ def visualize_pipeline_result(
         ),
     )
 
-    print(f"  ✓ Visualizations saved to {output_path}")
+    print(f"  [OK] Visualizations saved to {output_path}")
 
 
 def create_comparison_grid(

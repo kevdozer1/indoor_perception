@@ -130,14 +130,14 @@ def main():
             image_size=tuple(args.image_size),
         )
 
-    print(f"  ✓ Created {args.num_scenes} synthetic scene(s)")
+    print(f"  [OK] Created {args.num_scenes} synthetic scene(s)")
     print(f"  Total frames: {args.num_scenes * args.num_frames}")
 
     # Step 2: Load dataset
     print_step(2, total_steps, "Loading dataset")
 
     dataset = ScanNetDataset(data_root=str(data_dir))
-    print(f"  ✓ Loaded {len(dataset)} frames")
+    print(f"  [OK] Loaded {len(dataset)} frames")
 
     # Step 3: Initialize pipeline
     print_step(3, total_steps, "Initializing perception pipeline")
@@ -154,7 +154,7 @@ def main():
     )
 
     stats = pipeline.get_statistics()
-    print(f"  ✓ Pipeline initialized")
+    print(f"  [OK] Pipeline initialized")
     print(f"    Model: {stats['model_name']}")
     print(f"    Device: {stats['device']}")
     print(f"    Classes: {stats['num_classes']}")
@@ -186,7 +186,7 @@ def main():
         result["rgb"] = frame["rgb"]
         results.append(result)
 
-    print(f"\n  ✓ Processed {len(results)} frames")
+    print(f"\n  [OK] Processed {len(results)} frames")
     print(f"  Point clouds saved to: {ply_dir}")
 
     # Step 5: Generate visualizations
@@ -226,7 +226,7 @@ def main():
             frame_id=full_frame_id,
         )
 
-    print(f"\n  ✓ Visualizations saved to: {viz_dir}")
+    print(f"\n  [OK] Visualizations saved to: {viz_dir}")
 
     # Create summary
     print_step(5, total_steps, "Creating demo summary")
@@ -267,7 +267,7 @@ def main():
         f.write("Demo completed successfully!\n")
         f.write("=" * 70 + "\n")
 
-    print(f"  ✓ Summary saved to: {summary_file}")
+    print(f"  [OK] Summary saved to: {summary_file}")
 
     # Final summary
     elapsed_time = time.time() - start_time
@@ -296,7 +296,7 @@ def main():
         print(f"  ... and {len(results) - 3} more")
 
     print("\n" + "=" * 70)
-    print("✓ Demo completed successfully!")
+    print("[SUCCESS] Demo completed successfully!")
     print("=" * 70 + "\n")
 
 
